@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<title>PDX To VA Moving Checklist</title>
+<style>
+:root{--bg:#f7f8fa;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.hdr{background:#1a1a2e;color:#fff;padding:18px 16px 12px;position:sticky;top:0;z-index:100}
+.hdr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.hdr h1{font-size:16px;font-weight:700;line-height:1.2}
+.hdr p{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.sync-info{text-align:right;flex-shrink:0}
+.sync-row{display:flex;align-items:center;gap:5px;justify-content:flex-end}
+.sdot{width:7px;height:7px;border-radius:50%;background:#6b7280;transition:background .3s}
+.sdot.live{background:#4ade80}
+.sdot.syncing{background:#fbbf24;animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.slbl{font-size:10px;color:rgba(255,255,255,.4)}
+.uname{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;cursor:pointer}
+.prog-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.prog-bar{flex:1;height:4px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;background:#4ade80;border-radius:99px;transition:width .4s}
+.prog-lbl{font-size:11px;color:rgba(255,255,255,.6);white-space:nowrap}
+.offline-banner{background:#fef3c7;border-bottom:1px solid #fde68a;padding:7px 16px;font-size:12px;color:#92400e;display:none}
+.offline-banner.show{display:block}
+.controls{padding:10px 16px 6px;display:flex;flex-direction:column;gap:7px}
+.search-row{display:flex;gap:7px}
+.srch{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:#fff;color:var(--text);outline:none}
+.srch:focus{border-color:#6366f1}
+.add-btn{padding:9px 14px;border-radius:10px;background:#22c55e;color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer}
+.chips{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.chip.active{border-color:#1a1a2e;background:#1a1a2e;color:#fff}
+.sumbar{display:flex;gap:5px;padding:0 16px 6px;flex-wrap:wrap}
+.stat{font-size:11px;color:var(--muted);background:#fff;border:1px solid var(--border);border-radius:7px;padding:3px 9px}
+.stat strong{color:var(--text)}
+.timeline{padding:0 16px 120px}
+.dblock{margin-bottom:2px}
+.dhdr{display:flex;align-items:center;gap:8px;padding:12px 0 5px}
+.dlbl{font-size:12px;font-weight:700}
+.dline{flex:1;height:1px;background:var(--border)}
+.dcnt{font-size:10px;color:var(--muted);background:var(--border);border-radius:99px;padding:2px 7px}
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);border-left:4px solid;margin-bottom:7px;overflow:hidden;transition:opacity .2s}
+.card.done{opacity:.5;background:#f0fdf4}
+.card.dl-card{box-shadow:0 0 0 1px rgba(220,38,38,.1)}
+.card.custom{border-left-style:dashed}
+.ctop{display:flex;align-items:flex-start;gap:11px;padding:12px 12px 9px;cursor:pointer;user-select:none}
+.cb{width:26px;height:26px;min-width:26px;border-radius:7px;border:2px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s;cursor:pointer;flex-shrink:0}
+.cb.checked{background:#22c55e;border-color:#22c55e}
+.cb svg{display:none}
+.cb.checked svg{display:block}
+.cmeta{flex:1;min-width:0}
+.ctitle{font-size:14px;font-weight:600;line-height:1.3}
+.card.done .ctitle{text-decoration:line-through;color:var(--muted)}
+.cbadges{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px}
+.dl-pill{background:#fef2f2;color:#dc2626}
+.cu-pill{background:#f0fdf4;color:#16a34a}
+.who-pill{background:#f3f4f6;color:#6b7280}
+.chev{color:var(--muted);font-size:18px;margin-top:2px;transition:transform .2s;flex-shrink:0;line-height:1}
+.chev.open{transform:rotate(180deg)}
+.cbody{padding:0 12px;max-height:0;overflow:hidden;transition:max-height .25s ease}
+.cbody.open{max-height:700px;padding-bottom:12px}
+.clines{display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--border);padding-top:9px}
+.cline{font-size:13px;color:#374151;line-height:1.4;padding-left:13px;position:relative}
+.cline::before{content:"-";position:absolute;left:0;color:#9ca3af}
+.cacts{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
+.cal-btn{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:7px 11px;border-radius:8px;background:#eff6ff;color:#1d4ed8;text-decoration:none;border:1px solid #bfdbfe}
+.done-btn{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:7px 11px;border-radius:8px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;cursor:pointer}
+.done-btn.undo{background:#fef2f2;color:#dc2626;border-color:#fecaca}
+.empty{text-align:center;padding:40px 16px;color:var(--muted);font-size:14px}
+.fab-group{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;z-index:200}
+.fab{border:none;border-radius:14px;padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.fab-green{background:#22c55e;color:#fff}
+.fab-dark{background:#1a1a2e;color:#fff}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.overlay.show{opacity:1;pointer-events:all}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:520px;transform:translateY(100%);transition:transform .25s ease}
+.overlay.show .modal{transform:translateY(0)}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:18px}
+.flabel{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.04em}
+.finput{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;color:var(--text);background:#fff;outline:none;font-family:inherit;margin-bottom:14px}
+.finput:focus{border-color:#6366f1}
+textarea.finput{min-height:80px;resize:vertical}
+.macts{display:flex;gap:10px;margin-top:6px}
+.mbtn-cancel{flex:1;padding:13px;border:1.5px solid var(--border);border-radius:10px;background:#fff;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer}
+.mbtn-save{flex:2;padding:13px;border:none;border-radius:10px;background:#1a1a2e;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.name-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px}
+.name-box{background:#fff;border-radius:18px;padding:28px 22px;width:100%;max-width:340px}
+.name-box h2{font-size:20px;font-weight:700;margin-bottom:6px}
+.name-box p{font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.name-input{width:100%;padding:13px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;outline:none;margin-bottom:12px;font-family:inherit}
+.name-input:focus{border-color:#6366f1}
+.name-go{width:100%;padding:14px;background:#1a1a2e;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="name-overlay" id="nameOverlay">
+  <div class="name-box">
+    <h2>Who's checking in?</h2>
+    <p>Enter your name so you and Eric can see who checked each item off.</p>
+    <input class="name-input" id="nameInput" type="text" placeholder="Casey or Eric..." maxlength="20" autocomplete="off">
+    <button class="name-go" id="nameGo">Let's go</button>
+  </div>
+</div>
+
+<div class="overlay" id="addOverlay">
+  <div class="modal">
+    <h2>Add a task</h2>
+    <label class="flabel">Title *</label>
+    <input class="finput" id="newTitle" type="text" placeholder="What needs to happen?" maxlength="120" autocomplete="off">
+    <label class="flabel">Details (one per line)</label>
+    <textarea class="finput" id="newDetails" placeholder="Notes, phone numbers, links..."></textarea>
+    <label class="flabel">Date</label>
+    <input class="finput" id="newDate" type="date" min="2026-05-21" max="2026-07-31">
+    <div class="macts">
+      <button class="mbtn-cancel" id="cancelAdd">Cancel</button>
+      <button class="mbtn-save" id="saveAdd">Add task</button>
+    </div>
+  </div>
+</div>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div>
+      <h1>PDX To VA Moving Checklist</h1>
+      <p>Portland OR &rarr; Mattaponi VA &bull; May 28 &ndash; June 22, 2026</p>
+    </div>
+    <div class="sync-info">
+      <div class="sync-row">
+        <div class="sdot" id="sdot"></div>
+        <span class="slbl" id="slbl">Connecting...</span>
+      </div>
+      <div class="uname" id="uname" onclick="resetName()"></div>
+    </div>
+  </div>
+  <div class="prog-row">
+    <div class="prog-bar"><div class="prog-fill" id="pfill" style="width:0%"></div></div>
+    <span class="prog-lbl" id="plbl">Loading...</span>
+  </div>
+</div>
+
+<div class="offline-banner" id="offlineBanner">Offline -- changes will sync when reconnected</div>
+
+<div class="controls">
+  <div class="search-row">
+    <input class="srch" id="srch" type="search" placeholder="Search tasks..." autocomplete="off">
+    <button class="add-btn" id="openAdd1">+ Add</button>
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
+<div class="sumbar" id="sumbar"></div>
+<div class="timeline" id="tl"><div class="empty">Connecting...</div></div>
+
+<div class="fab-group">
+  <button class="fab fab-green" id="openAdd2">+ Add task</button>
+  <button class="fab fab-dark" id="expandBtn">Expand all</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, update, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyCqrJkBn2jE_eZiYE-AHv_1LHUJGVordvQ",
+  authDomain: "pdx-va-checklist.firebaseapp.com",
+  databaseURL: "https://pdx-va-checklist-default-rtdb.firebaseio.com",
+  projectId: "pdx-va-checklist",
+  storageBucket: "pdx-va-checklist.firebasestorage.app",
+  messagingSenderId: "323473850082",
+  appId: "1:323473850082:web:94a08f1d4cbb74001068bb"
+});
+
+const db = getDatabase(app);
+const doneRef = ref(db, "done");
+const customRef = ref(db, "custom");
+
+const CATS = {
+  property: { label:"Property / VA house", c:"#4A7C59", bg:"#EAF3DE", tc:"#2d5a3d" },
+  legal:    { label:"Legal / personal",    c:"#7B5EA7", bg:"#EEEDFE", tc:"#4c3789" },
+  money:    { label:"Money / deposits",    c:"#C04040", bg:"#FCEBEB", tc:"#991b1b" },
+  portland: { label:"Portland house",      c:"#B87333", bg:"#FFF3E0", tc:"#92400e" },
+  moving:   { label:"Moving / shipping",   c:"#2E7D82", bg:"#E1F5EE", tc:"#0f5a5e" },
+  movers:   { label:"Movers",              c:"#8B4513", bg:"#FDF0E8", tc:"#7c2d12" },
+  trip:     { label:"Trip",                c:"#4A6FA5", bg:"#E6F1FB", tc:"#1e3a5f" },
+  vehicle:  { label:"Vehicle prep",        c:"#455A64", bg:"#ECEFF1", tc:"#263238" },
+  home:     { label:"Home / orders",       c:"#6A5ACD", bg:"#F0EEFF", tc:"#3730a3" },
+  business: { label:"Business / digital",  c:"#1565C0", bg:"#E3F2FD", tc:"#1e3a8a" },
+  custom:   { label:"Added by us",         c:"#059669", bg:"#ECFDF5", tc:"#065f46"  }
+};
+
+const DATE_ORDER = [
+  "May 28 (Thu)","May 28-29","May 29 (Fri)","May 30 (Sat)",
+  "Jun 1 (Mon)","Jun 2 (Tue)","Jun 3 (Wed)","Jun 5 (Thu)",
+  "Jun 6 (Fri)","Jun 7 (Sat)","Jun 8 (Sun)","Jun 9 (Mon)",
+  "Jun 10 (Tue)","Jun 12 (Thu)","Jun 13 (Fri)","Jun 14 (Sun)",
+  "Jun 15 (Mon)","Jun 16 (Tue)","Jun 17 (Wed)","Jun 18 (Thu)",
+  "Jun 19 (Fri)","Jun 20 (Sat)","Jun 21 (Sun)","Jun 22 (Mon)","Jun 23+"
+];
+
+const BUILTIN = [
+  {date:"May 28 (Thu)",cat:"property",dl:true,title:"CLOSING DAY -- 323 Burnt Mill Lane",lines:["Title company: Sage Title","Wire funds sent May 23-24 BEFORE closing","Call Sage Title to verify wire instructions by phone -- NEVER trust emailed instructions","You own the house as of today"],iso:"2026-05-28"},
+  {date:"May 28-29",cat:"legal",dl:false,title:"Schedule Utah online marriage ceremony",lines:["clerk.utahcounty.gov -- remote video, ~$70 fees + officiant","Must be done after May 28 closing and before June 14 departure","Book officiant ASAP"],iso:"2026-05-28"},
+  {date:"May 28-29",cat:"legal",dl:false,title:"Order Eric gold wedding ring",lines:["Order online immediately -- allow 7-10 days shipping","Must arrive before ceremony date"],iso:"2026-05-28"},
+  {date:"May 28-29",cat:"money",dl:false,title:"Apply for personal loan -- moving costs",lines:["Check Rivermark Credit Union first","Compare: SoFi (sofi.com), LightStream (lightstream.com)","Have ready: pay stubs, bank statements, ID, SSN"],iso:"2026-05-28"},
+  {date:"May 28 (Thu)",cat:"property",dl:false,title:"Find VA electricity provider for 323 Burnt Mill Lane",lines:["Likely: Rappahannock Electric Coop (REC) or Dominion Energy","Ask Monica or call King and Queen County: (804) 785-5975","REC: 800-552-3904 | Dominion: 866-366-4357"],iso:"2026-05-28"},
+  {date:"May 28 (Thu)",cat:"business",dl:true,title:"URGENT: Virginia websites -- submit to Google indexing",lines:["Submit all VA pages to Google Search Console by May 31","URL Inspection tool: paste URL, click Request Indexing","Submit sitemap: Search Console > Sitemaps","Google indexing takes 1-2 weeks -- do not wait"],iso:"2026-05-28"},
+  {date:"May 28 (Thu)",cat:"business",dl:true,title:"Google My Business -- plan Virginia address change",lines:["DO NOT change GMB address yet -- you are not physically there","Change GMB June 21 when physically at 323 Burnt Mill Lane","Before June 21: update website, social, directories to VA address"],iso:"2026-05-28"},
+  {date:"May 28 (Thu)",cat:"vehicle",dl:false,title:"ORDER: Back seat organizers for kids",lines:["Seat back organizers for boosters -- need 2 (LUSSO Gear or Diono, ~$25-40 each)","Also: small soft cooler for snacks from back seat","Order now -- Amazon delivery before June 14"],iso:"2026-05-28"},
+  {date:"May 28 (Thu)",cat:"vehicle",dl:false,title:"ORDER: Spare tire for cargo trailer",lines:["Get trailer tire size from sidewall before ordering","Buy mounted at a local tire shop OR order online with hardware","Do not leave Portland without a spare -- Montana and SD are remote"],iso:"2026-05-28"},
+  {date:"May 28 (Thu)",cat:"vehicle",dl:false,title:"ORDER: SxS cover for Can-Am Maverick on trailer",lines:["Fitted cover with tie-down straps for highway speeds","Search: Can-Am Maverick Sport/Trail cover (confirm your trim)","Allow 5-7 days delivery"],iso:"2026-05-28"},
+  {date:"May 28 (Thu)",cat:"home",dl:false,title:"ORDER: Oven plastic cover replacement",lines:["Find make and model from label inside oven door frame","Order from AppliancePartsPros.com or RepairClinic.com","Allow 5-10 days shipping"],iso:"2026-05-28"},
+  {date:"May 29 (Fri)",cat:"property",dl:false,title:"CALL: Schedule locksmith -- VA lock change June 8",lines:["Find locksmith serving King and Queen County (rural -- book early)","Schedule for June 8 after sellers vacate","Request 4+ key copies: 2 tenant sets, 1 property manager, 1 spare"],iso:"2026-05-29"},
+  {date:"May 29 (Fri)",cat:"property",dl:false,title:"CALL Monica -- schedule post-possession walk-through June 8",lines:["Monica does walk-through after sellers vacate June 8","Document deficiencies within 3 days (by June 11)","Monica: 757-768-0387"],iso:"2026-05-29"},
+  {date:"May 29 (Fri)",cat:"portland",dl:false,title:"CALL: Schedule contractor -- bathroom floor repair",lines:["Work must be complete before June 14 departure","Target: June 9-13","Get written quote"],iso:"2026-05-29"},
+  {date:"May 29 (Fri)",cat:"property",dl:true,title:"CALL: Set up electricity at 323 Burnt Mill Lane",lines:["Request service start: June 8 or earlier","Have ready: name, SSN, 323 Burnt Mill Lane Mattaponi VA 23110, move-in date","REC: 800-552-3904 | Dominion: 866-366-4357"],iso:"2026-05-29"},
+  {date:"May 29 (Fri)",cat:"portland",dl:true,title:"CALL: Pride Disposal -- schedule dumpster for Tigard",lines:["Delivery: June 7 | Pickup: June 15","Size: 10 yard typical, 20 yard if needed","Pride Disposal: (503) 625-6177 | pridedisposal.com"],iso:"2026-05-29"},
+  {date:"May 29 (Fri)",cat:"business",dl:true,title:"Virginia LLC -- file with State Corporation Commission",lines:["File at scc.virginia.gov (CIS portal) | Fee: $100","Need: LLC name, registered agent VA address, 323 Burnt Mill Lane as principal office","Processing: 1-3 business days | Save Certificate of Organization"],iso:"2026-05-29"},
+  {date:"May 29 (Fri)",cat:"business",dl:false,title:"Virginia business license -- King and Queen County",lines:["Apply after VA LLC is approved","King and Queen County Commissioner of Revenue: (804) 785-5978","Fee: typically $30-100 | Ask about BPOL requirements"],iso:"2026-05-29"},
+  {date:"May 29 (Fri)",cat:"business",dl:true,title:"Oregon LLC -- begin dissolution process",lines:["File Articles of Dissolution at sos.oregon.gov/business | Fee: $100","Do NOT dissolve until Virginia LLC is confirmed active","File dissolution after receiving VA Certificate of Organization"],iso:"2026-05-29"},
+  {date:"May 29 (Fri)",cat:"home",dl:false,title:"Follow up with Starlink -- Mini dish pending",lines:["Call or chat: starlink.com/support or app","Ask for ship date and tracking","Update service address to Mattaponi VA in app"],iso:"2026-05-29"},
+  {date:"May 29 (Fri)",cat:"home",dl:false,title:"ORDER: WiFi router + ethernet cables",lines:["Pack the router in Land Cruiser -- NOT the container","Order Cat6 flat cables: 50ft and 25ft (Amazon same/next day)","Goal: internet Day 1 June 21 via Starlink + router"],iso:"2026-05-29"},
+  {date:"May 30 (Sat)",cat:"property",dl:false,title:"Set up Avail rental listing -- Portland house",lines:["avail.co: description, photos, rent, availability date","Build rental application in Avail","Ready to send to prospects this week"],iso:"2026-05-30"},
+  {date:"May 30 (Sat)",cat:"property",dl:false,title:"Send property manager contract documents",lines:["Send: management agreement, authorization to manage, owner info sheet","Get signed copies back before June 14","Confirm payment amount and schedule -- pay ahead"],iso:"2026-05-30"},
+  {date:"May 30 (Sat)",cat:"home",dl:true,title:"Personal loan -- apply immediately after close",lines:["Check Rivermark Credit Union first (existing relationship)","Compare: SoFi, LightStream","Have ready: 2 pay stubs, 2 bank statements, employer info, SSN"],iso:"2026-05-30"},
+  {date:"Jun 1 (Mon)",cat:"money",dl:true,title:"Land Rover + trailer transport -- 1/3 deposit DUE",lines:["First 1/3 payment due today","Confirm amount and payment method with carrier","Keep receipt"],iso:"2026-06-01"},
+  {date:"Jun 1 (Mon)",cat:"movers",dl:false,title:"CALL: Book Portland movers for June 5",lines:["2 movers to load 1-800-PackRat container only","Morning start June 5 preferred","Two Men and a Truck, College Hunks, or local options"],iso:"2026-06-01"},
+  {date:"Jun 1 (Mon)",cat:"movers",dl:false,title:"CALL: Book Mattaponi movers for June 21-23",lines:["2 movers to unload PackRat container only","King and Queen County VA -- very limited options, book ASAP","Search: Richmond VA movers willing to travel to Mattaponi"],iso:"2026-06-01"},
+  {date:"Jun 2 (Tue)",cat:"portland",dl:false,title:"Begin packing -- Portland house",lines:["Container items first (needed June 5), then car load, then daily-use","Replace doors this week -- done before cleaners and departure"],iso:"2026-06-02"},
+  {date:"Jun 2 (Tue)",cat:"vehicle",dl:false,title:"Schedule Land Cruiser service -- oil change + tire rotation",lines:["2000 Land Cruiser 100 Series -- oil: 5W-30 conventional","275/70R16 tires -- 32 PSI cold / 35 PSI towing","Inspect: fluids, belts, hoses, trailer hitch, wiring harness","Book NOW -- must be done before June 14"],iso:"2026-06-02"},
+  {date:"Jun 2 (Tue)",cat:"vehicle",dl:false,title:"Check booster seats -- comfort and fit",lines:["Confirm fit in Land Cruiser for 8 days on the road","Seatbelt path correct, no sliding, kids can reach buckle","If replacing: Graco Affix or Chicco GoFit (~$40-60)"],iso:"2026-06-02"},
+  {date:"Jun 3 (Wed)",cat:"property",dl:false,title:"Finalize Avail application -- ready to send",lines:["Review listing and application","Send to interested prospects","Confirm property manager has all documents"],iso:"2026-06-03"},
+  {date:"Jun 5 (Thu)",cat:"money",dl:true,title:"PackRat remainder payment -- funds IN BANK today",lines:["Full remainder due June 7 but funds must clear by June 5","Transfer or deposit now -- do not wait"],iso:"2026-06-05"},
+  {date:"Jun 5 (Thu)",cat:"moving",dl:true,title:"Container fully packed -- deadline",lines:["ALL container items loaded by end of day","Container picked up June 6 -- no second chances","Movers arrive this morning to help"],iso:"2026-06-05"},
+  {date:"Jun 5 (Thu)",cat:"movers",dl:true,title:"Portland movers -- LOAD PackRat container",lines:["2 movers, loading only, morning start","Have everything staged and ready before they arrive"],iso:"2026-06-05"},
+  {date:"Jun 5 (Thu)",cat:"vehicle",dl:true,title:"Land Cruiser -- pre-departure inspection complete",lines:["Oil changed, tires rotated and pressure checked","All fluids topped | Trailer hitch, ball, wiring inspected","Spare trailer tire on board | SxS cover secured on Can-Am","Emergency kit: jumper cables, tow strap, first aid, flashlight, tools"],iso:"2026-06-05"},
+  {date:"Jun 6 (Fri)",cat:"moving",dl:true,title:"1-800-PackRat container pickup",lines:["Be present | Confirm delivery: 323 Burnt Mill Lane, Mattaponi VA 23110","Confirm delivery date June 21 | Get driver name and reference number"],iso:"2026-06-06"},
+  {date:"Jun 7 (Sat)",cat:"money",dl:true,title:"1-800-PackRat remainder payment DUE",lines:["Funds should already be in account (June 5)","Confirm payment processed and get receipt"],iso:"2026-06-07"},
+  {date:"Jun 8 (Sun)",cat:"property",dl:true,title:"Sellers vacate -- Monica walk-through",lines:["Monica does post-possession walk-through today","Document deficiencies in writing within 3 days (by June 11)","Check: appliances, septic, HVAC, water systems | Monica: 757-768-0387"],iso:"2026-06-08"},
+  {date:"Jun 8 (Sun)",cat:"property",dl:true,title:"Locksmith -- change locks at 323 Burnt Mill Lane",lines:["After sellers vacate -- do not change locks before they are out","Get 4+ key copies: 2 tenant sets, 1 property manager, 1 spare"],iso:"2026-06-08"},
+  {date:"Jun 9 (Mon)",cat:"property",dl:false,title:"CALL: Book VA house cleaners for June 21",lines:["Rural area -- very limited options, book NOW","Search: cleaning services Mattaponi VA, West Point VA, King and Queen County","Brief: empty since June 8, needs full move-in ready clean"],iso:"2026-06-09"},
+  {date:"Jun 9 (Mon)",cat:"portland",dl:false,title:"CALL: Book Portland house cleaners for June 12-13",lines:["After all packing is complete | Must be done before June 14","Broom-clean condition required"],iso:"2026-06-09"},
+  {date:"Jun 9 (Mon)",cat:"home",dl:false,title:"ORDER: Kitchen staples for 323 Burnt Mill Lane",lines:["Pantry: oil, salt, spices, pasta, rice, canned goods, coffee","Cleaning: dish soap, cleaner, paper towels, trash bags","Bathroom: toilet paper (buy a lot -- stores are far), soap","West Point VA has Food Lion and Dollar General"],iso:"2026-06-09"},
+  {date:"Jun 10 (Tue)",cat:"moving",dl:true,title:"Land Rover + cargo trailer -- carrier pickup window opens",lines:["Carrier picks up June 10-13 -- confirm exact date","Be present | Inspect and photograph before handoff","Second 1/3 transport payment due on pickup day"],iso:"2026-06-10"},
+  {date:"Jun 10 (Tue)",cat:"money",dl:true,title:"Land Rover + trailer -- 2nd payment (1/3) due on pickup day",lines:["Due the day carrier picks up -- have payment ready","Keep receipt"],iso:"2026-06-10"},
+  {date:"Jun 12 (Thu)",cat:"legal",dl:false,title:"Utah online marriage -- ceremony",lines:["clerk.utahcounty.gov -- confirm officiant, witnesses, video call scheduled","Eric ring must be in hand | Must be done before June 14 departure"],iso:"2026-06-12"},
+  {date:"Jun 13 (Fri)",cat:"legal",dl:true,title:"Stella recital -- 12:00 PM SHARP, arrive 10:30 AM",lines:["HARD COMMITMENT -- nothing scheduled this morning","Stella arrives 10:30 AM | Recital 12:00 PM","No moving pickups, cleaners, or contractors before noon"],iso:"2026-06-13"},
+  {date:"Jun 13 (Fri)",cat:"moving",dl:true,title:"Land Rover + trailer -- LAST DAY for carrier pickup",lines:["Absolute last day before June 14 departure","Confirm pickup and get written delivery confirmation for June 22"],iso:"2026-06-13"},
+  {date:"Jun 13 (Fri)",cat:"portland",dl:true,title:"Portland house -- final clean and handoff",lines:["Cleaners done today | All repairs complete","Return keys | Take walkthrough photos"],iso:"2026-06-13"},
+  {date:"Jun 14 (Sun)",cat:"trip",dl:true,title:"DEPART Portland -- Day 1 of 8",lines:["Leave by 7:00 AM | Route: I-84 E to I-82 N to I-90 E","Mirabeau Park Hotel, 1100 N Sullivan Rd, Spokane Valley WA | 509-924-9000","Check-in 4PM | Pet fee $35 | Total $363.55 | ~340 miles ~5.5h"],iso:"2026-06-14"},
+  {date:"Jun 14 (Sun)",cat:"business",dl:false,title:"Research VA vehicle registration on the road",lines:["Vehicles: Land Cruiser, Land Rover, Motorcycle, Cargo Trailer","dmv.virginia.gov | VA requires registration within 30 days of residency","DMV Select in King William or West Point is faster","Target: all registered before June 29"],iso:"2026-06-14"},
+  {date:"Jun 15 (Mon)",cat:"trip",dl:false,title:"Day 2 -- Billings MT (via Missoula carousel)",lines:["Stop: Carousel for Missoula open 11AM -- leave Spokane by 8AM","Kelly Inn Best Western Plus | 4915 Southgate Dr Billings MT | (406) 256-9400","Check-in 4PM | Pet fee $0 | Total $373.35 | ~540 miles ~8h"],iso:"2026-06-15"},
+  {date:"Jun 16 (Tue)",cat:"trip",dl:false,title:"Day 3 -- Rapid City SD",lines:["Stops: Wall Drug (I-90 Exit 110), Badlands National Park ($35/vehicle)","Hilton Home2Suites | Check-in 4PM | Total $350 incl pet fee | ~340 miles ~5.5h"],iso:"2026-06-16"},
+  {date:"Jun 17 (Wed)",cat:"trip",dl:false,title:"Day 4 -- Sioux Falls SD",lines:["Stops: Mount Rushmore ($10 parking), Dinosaur Park (free), Corn Palace (free)","ClubHouse Hotel | 2320 S Louise Ave | 605-361-8700 | Check-in 3PM | Total $280 | ~360 miles"],iso:"2026-06-17"},
+  {date:"Jun 18 (Thu)",cat:"trip",dl:false,title:"Day 5 -- Kansas City KS",lines:["Margaritaville | 1491 N 98th Ter KC KS | (913) 340-1800","Check-in 4PM | Pet fee $75 | Total $600 | 48-HOUR CANCEL POLICY | ~364 miles"],iso:"2026-06-18"},
+  {date:"Jun 19 (Fri)",cat:"trip",dl:false,title:"Day 6 -- Louisville KY",lines:["Drury Inn North | 9597 Brownsboro Rd | 502-425-5500 | Check-in 3PM | Total $366","Free food 5:30-7PM | DOES NOT ACCEPT CASH | 24-hr cancel | ~427 miles"],iso:"2026-06-19"},
+  {date:"Jun 20 (Sat)",cat:"trip",dl:false,title:"Day 7 -- Charlottesville VA",lines:["Homewood Suites | 2036 India Rd | 434-244-6200 | Check-in 3PM | Check-out NOON","Total $312.79 | Card: Rivermark | ~490 miles ~7.5h"],iso:"2026-06-20"},
+  {date:"Jun 21 (Sun)",cat:"trip",dl:true,title:"Day 8 -- ARRIVE MATTAPONI VA",lines:["Leave Charlottesville by 10AM | Route: US-29 S to US-15 S to US-360 E","~160 miles ~2.5h | Arrive home before noon","323 Burnt Mill Lane -- closed May 28, sellers out June 8"],iso:"2026-06-21"},
+  {date:"Jun 21 (Sun)",cat:"moving",dl:true,title:"1-800-PackRat container arrives",lines:["Delivery to 323 Burnt Mill Lane Mattaponi VA 23110","Request afternoon window -- call PackRat before leaving Portland","PackRat: 1-800-722-5728"],iso:"2026-06-21"},
+  {date:"Jun 21 (Sun)",cat:"property",dl:false,title:"VA house cleaners -- afternoon arrival",lines:["Preferred: cleaners afternoon June 21 after you arrive","Alternate: morning June 22 before radon contractor","Coordinate so cleaners and radon contractor do not overlap"],iso:"2026-06-21"},
+  {date:"Jun 21 (Sun)",cat:"business",dl:true,title:"Change Google My Business address to Virginia",lines:["Now at 323 Burnt Mill Lane -- safe to update GMB","business.google.com > Info > Address > Mattaponi VA 23110","Google triggers verification: postcard or video call","If video: walk around exterior of property on camera"],iso:"2026-06-21"},
+  {date:"Jun 22 (Mon)",cat:"property",dl:true,title:"Radon mitigation contractor -- 9:00 AM",lines:["Contractor arrives 9AM at 323 Burnt Mill Lane","Be present | Schedule cleaners for afternoon if also June 22"],iso:"2026-06-22"},
+  {date:"Jun 22 (Mon)",cat:"moving",dl:true,title:"Land Rover + cargo trailer arrives -- Mattaponi",lines:["Be present | Inspect immediately for damage","Final 1/3 payment due on delivery | Get signed receipt"],iso:"2026-06-22"},
+  {date:"Jun 22 (Mon)",cat:"money",dl:true,title:"Land Rover + trailer -- final 1/3 payment DUE",lines:["Due on delivery today | Have payment ready","Get signed delivery receipt"],iso:"2026-06-22"},
+  {date:"Jun 22 (Mon)",cat:"movers",dl:true,title:"Mattaponi movers -- UNLOAD PackRat container",lines:["2 movers unloading only | Have floor plan ready","Do not overlap with 9AM radon contractor","Confirm movers still coming the day before"],iso:"2026-06-22"},
+  {date:"Jun 22 (Mon)",cat:"business",dl:false,title:"VA vehicle registration -- schedule safety inspections",lines:["Licensed inspection station in King William or West Point area","All 4 vehicles: Land Cruiser, Land Rover, Motorcycle, Trailer","Budget $50-150 per vehicle | Target: before June 29"],iso:"2026-06-22"}
+];
+
+let doneData = {};
+let customTasks = {};
+let userName = localStorage.getItem("pdx_va_name") || "";
+let activeCat = "all";
+let expanded = new Set();
+let allExp = false;
+let loaded = false;
+
+// Name modal
+function initName() {
+  if (userName) {
+    document.getElementById("nameOverlay").style.display = "none";
+    document.getElementById("uname").textContent = "Checking in as " + userName;
+  }
+}
+document.getElementById("nameGo").onclick = function() {
+  var v = document.getElementById("nameInput").value.trim();
+  if (!v) return;
+  userName = v;
+  localStorage.setItem("pdx_va_name", v);
+  document.getElementById("nameOverlay").style.display = "none";
+  document.getElementById("uname").textContent = "Checking in as " + v;
+};
+document.getElementById("nameInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") document.getElementById("nameGo").click();
+});
+window.resetName = function() {
+  localStorage.removeItem("pdx_va_name");
+  userName = "";
+  document.getElementById("nameInput").value = "";
+  document.getElementById("nameOverlay").style.display = "flex";
+};
+initName();
+
+// Sync status
+function setSS(s) {
+  var dot = document.getElementById("sdot");
+  var lbl = document.getElementById("slbl");
+  var ban = document.getElementById("offlineBanner");
+  if (s === "live") { dot.className = "sdot live"; lbl.textContent = "Live"; ban.classList.remove("show"); }
+  else if (s === "syncing") { dot.className = "sdot syncing"; lbl.textContent = "Saving..."; }
+  else { dot.className = "sdot"; lbl.textContent = "Offline"; ban.classList.add("show"); }
+}
+
+// Firebase listeners
+onValue(doneRef, function(snap) {
+  doneData = snap.val() || {};
+  setSS("live");
+  if (loaded) { updateProg(); render(); }
+}, function() { setSS("offline"); });
+
+onValue(customRef, function(snap) {
+  customTasks = snap.val() || {};
+  loaded = true;
+  updateProg();
+  buildChips();
+  render();
+}, function() { setSS("offline"); });
+
+function allItems() {
+  var custom = Object.entries(customTasks).map(function(entry) {
+    var id = entry[0]; var t = entry[1];
+    return { id: id, date: t.date || "Jun 23+", cat: "custom", dl: false,
+      title: t.title, lines: t.lines || [], iso: t.iso || "2026-06-23",
+      addedBy: t.addedBy, isCustom: true };
+  });
+  return BUILTIN.map(function(t, i) { return Object.assign({}, t, { id: "b" + i }); }).concat(custom);
+}
+
+function isoToLabel(iso) {
+  if (!iso) return "Jun 23+";
+  var d = new Date(iso + "T12:00:00");
+  var days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug"];
+  var lbl = days[d.getDay()] + " " + months[d.getMonth()] + " " + d.getDate();
+  return DATE_ORDER.indexOf(lbl) >= 0 ? lbl : "Jun 23+";
+}
+
+function gcal(title, iso, lines) {
+  var d = (iso || "2026-06-23").replace(/-/g, "");
+  var dt = new Date((iso || "2026-06-23") + "T12:00:00");
+  dt.setDate(dt.getDate() + 1);
+  var nd = dt.toISOString().slice(0, 10).replace(/-/g, "");
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" +
+    encodeURIComponent(title) + "&dates=" + d + "/" + nd +
+    "&details=" + encodeURIComponent((lines || []).join("\n"));
+}
+
+function updateProg() {
+  var items = allItems();
+  var total = items.length;
+  var dc = items.filter(function(i) { return doneData[i.id]; }).length;
+  var pct = total ? Math.round(dc / total * 100) : 0;
+  document.getElementById("pfill").style.width = pct + "%";
+  document.getElementById("plbl").textContent = dc + " / " + total + " done";
+}
+
+function toggleDone(id) {
+  setSS("syncing");
+  var upd = {};
+  if (doneData[id]) {
+    upd[id] = null;
+    delete doneData[id];
+  } else {
+    upd[id] = { by: userName || "Someone", at: Date.now() };
+    doneData[id] = upd[id];
+  }
+  update(doneRef, upd).then(function() { setSS("live"); }).catch(function() { setSS("offline"); });
+  updateProg();
+  render();
+}
+
+function buildChips() {
+  var items = allItems();
+  var el = document.getElementById("chips");
+  var cats = ["all"].concat(Object.keys(CATS)).concat(["deadlines"]);
+  el.innerHTML = "";
+  cats.forEach(function(cat) {
+    var count = cat === "all" ? items.length
+      : cat === "deadlines" ? items.filter(function(i) { return i.dl; }).length
+      : items.filter(function(i) { return i.cat === cat; }).length;
+    if (count === 0 && cat !== "all") return;
+    var b = document.createElement("button");
+    b.className = "chip" + (cat === activeCat ? " active" : "");
+    var lbl = cat === "all" ? "All" : cat === "deadlines" ? "Deadlines" : (CATS[cat] ? CATS[cat].label : cat);
+    b.textContent = lbl + " " + count;
+    b.onclick = function() { activeCat = cat; buildChips(); render(); };
+    el.appendChild(b);
+  });
+}
+
+function render() {
+  var q = document.getElementById("srch").value.toLowerCase();
+  var items = allItems();
+  var f = items.filter(function(item) {
+    if (activeCat === "deadlines" && !item.dl) return false;
+    if (activeCat !== "all" && activeCat !== "deadlines" && item.cat !== activeCat) return false;
+    if (q) return item.title.toLowerCase().indexOf(q) >= 0 ||
+      (item.lines || []).some(function(l) { return l.toLowerCase().indexOf(q) >= 0; });
+    return true;
+  });
+
+  var dc = f.filter(function(i) { return doneData[i.id]; }).length;
+  var dl = f.filter(function(i) { return i.dl; }).length;
+  document.getElementById("sumbar").innerHTML =
+    "<span class='stat'><strong>" + f.length + "</strong> tasks</span>" +
+    "<span class='stat'><strong>" + dl + "</strong> deadlines</span>" +
+    "<span class='stat'><strong>" + (f.length - dc) + "</strong> remaining</span>";
+
+  var tl = document.getElementById("tl");
+  tl.innerHTML = "";
+  if (!f.length) { tl.innerHTML = "<div class='empty'>No tasks match.</div>"; return; }
+
+  var grouped = {};
+  DATE_ORDER.forEach(function(d) {
+    var di = f.filter(function(i) {
+      return i.date === d || (d === "Jun 23+" && DATE_ORDER.slice(0, -1).indexOf(i.date) < 0);
+    });
+    if (di.length) grouped[d] = di;
+  });
+
+  Object.keys(grouped).forEach(function(date) {
+    var items = grouped[date];
+    var block = document.createElement("div");
+    block.className = "dblock";
+    var hdr = document.createElement("div");
+    hdr.className = "dhdr";
+    hdr.innerHTML = "<span class='dlbl'>" + date + "</span><div class='dline'></div><span class='dcnt'>" + items.length + "</span>";
+    block.appendChild(hdr);
+
+    items.forEach(function(item) {
+      var id = item.id;
+      var de = doneData[id];
+      var isDone = !!de;
+      var isOpen = expanded.has(id);
+      var cat = CATS[item.cat] || CATS.custom;
+
+      var card = document.createElement("div");
+      card.className = "card" + (isDone ? " done" : "") + (item.dl ? " dl-card" : "") + (item.isCustom ? " custom" : "");
+      card.style.borderLeftColor = cat.c;
+
+      var top = document.createElement("div");
+      top.className = "ctop";
+      top.onclick = function(e) {
+        if (e.target.closest(".cb")) return;
+        if (expanded.has(id)) expanded.delete(id); else expanded.add(id);
+        render();
+      };
+
+      var cb = document.createElement("div");
+      cb.className = "cb" + (isDone ? " checked" : "");
+      cb.innerHTML = "<svg width='13' height='10' viewBox='0 0 13 10' fill='none'><path d='M1.5 5L5 8.5L11.5 1.5' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>";
+      cb.onclick = function(e) { e.stopPropagation(); toggleDone(id); };
+
+      var meta = document.createElement("div");
+      meta.className = "cmeta";
+      var tt = document.createElement("div");
+      tt.className = "ctitle";
+      tt.textContent = item.title;
+
+      var badges = document.createElement("div");
+      badges.className = "cbadges";
+
+      var cp = document.createElement("span");
+      cp.className = "badge";
+      cp.style.cssText = "background:" + cat.bg + ";color:" + cat.tc;
+      cp.textContent = cat.label;
+      badges.appendChild(cp);
+
+      if (item.dl) {
+        var dp = document.createElement("span");
+        dp.className = "badge dl-pill";
+        dp.textContent = "Hard deadline";
+        badges.appendChild(dp);
+      }
+      if (item.isCustom) {
+        var xp = document.createElement("span");
+        xp.className = "badge cu-pill";
+        xp.textContent = "Added by " + (item.addedBy || "us");
+        badges.appendChild(xp);
+      }
+      if (isDone && de.by) {
+        var wp = document.createElement("span");
+        wp.className = "badge who-pill";
+        wp.textContent = "Done by " + de.by;
+        badges.appendChild(wp);
+      }
+
+      meta.appendChild(tt);
+      meta.appendChild(badges);
+
+      var chev = document.createElement("div");
+      chev.className = "chev" + (isOpen ? " open" : "");
+      chev.textContent = "v";
+
+      top.appendChild(cb);
+      top.appendChild(meta);
+      top.appendChild(chev);
+
+      var body = document.createElement("div");
+      body.className = "cbody" + (isOpen ? " open" : "");
+
+      var ld = document.createElement("div");
+      ld.className = "clines";
+      (item.lines || []).forEach(function(line) {
+        var l = document.createElement("div");
+        l.className = "cline";
+        l.textContent = line;
+        ld.appendChild(l);
+      });
+
+      var acts = document.createElement("div");
+      acts.className = "cacts";
+
+      var ca = document.createElement("a");
+      ca.className = "cal-btn";
+      ca.href = gcal(item.title, item.iso, item.lines);
+      ca.target = "_blank";
+      ca.rel = "noopener";
+      ca.textContent = "Add to Google Calendar";
+      acts.appendChild(ca);
+
+      var db2 = document.createElement("button");
+      db2.className = "done-btn" + (isDone ? " undo" : "");
+      db2.textContent = isDone ? "Undo" : "Mark done";
+      db2.onclick = function() { toggleDone(id); };
+      acts.appendChild(db2);
+
+      body.appendChild(ld);
+      body.appendChild(acts);
+      card.appendChild(top);
+      card.appendChild(body);
+      block.appendChild(card);
+    });
+    tl.appendChild(block);
+  });
+}
+
+// Add task modal
+function openAdd() {
+  document.getElementById("addOverlay").classList.add("show");
+  document.getElementById("newTitle").focus();
+}
+function closeAdd() {
+  document.getElementById("addOverlay").classList.remove("show");
+  document.getElementById("newTitle").value = "";
+  document.getElementById("newDetails").value = "";
+  document.getElementById("newDate").value = "";
+}
+
+document.getElementById("openAdd1").onclick = openAdd;
+document.getElementById("openAdd2").onclick = openAdd;
+document.getElementById("cancelAdd").onclick = closeAdd;
+document.getElementById("addOverlay").onclick = function(e) {
+  if (e.target === document.getElementById("addOverlay")) closeAdd();
+};
+
+document.getElementById("saveAdd").onclick = function() {
+  var title = document.getElementById("newTitle").value.trim();
+  if (!title) { document.getElementById("newTitle").focus(); return; }
+  var raw = document.getElementById("newDetails").value.trim();
+  var lines = raw ? raw.split("\n").map(function(l) { return l.trim(); }).filter(Boolean) : [];
+  var dateVal = document.getElementById("newDate").value;
+  var iso = dateVal || "2026-06-23";
+  var dateLabel = isoToLabel(iso);
+  var task = { title: title, lines: lines, date: dateLabel, iso: iso,
+    addedBy: userName || "Someone", createdAt: Date.now() };
+  setSS("syncing");
+  push(customRef, task).then(function() { setSS("live"); closeAdd(); }).catch(function() { setSS("offline"); });
+};
+
+// Expand/collapse
+document.getElementById("expandBtn").onclick = function() {
+  if (allExp) {
+    expanded.clear();
+    document.getElementById("expandBtn").textContent = "Expand all";
+    allExp = false;
+  } else {
+    allItems().forEach(function(i) { expanded.add(i.id); });
+    document.getElementById("expandBtn").textContent = "Collapse all";
+    allExp = true;
+  }
+  render();
+};
+
+document.getElementById("srch").addEventListener("input", render);
+</script>
+</body>
+</html>
